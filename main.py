@@ -5,7 +5,6 @@ import requests
 import feedparser
 import schedule
 from datetime import datetime
-from urllib.parse import quote
 from dotenv import load_dotenv
 
 # ======================
@@ -14,7 +13,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+# Cho phép nhiều chat ID (ngăn cách bằng dấu phẩy trong .env)
+CHAT_IDS = [id.strip() for id in os.getenv("TELEGRAM_CHAT_IDS", "").split(",") if id.strip()]
 TIMEZONE = os.getenv("TIMEZONE", "Asia/Ho_Chi_Minh")
 
 DATA_DIR = "data"
@@ -33,13 +33,14 @@ logging.basicConfig(
 # ======================
 
 def send_telegram(msg):
-    """Gửi tin nhắn đến Telegram"""
+    """Gửi tin nhắn đến nhiều người / nhóm"""
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": msg, "parse_mode": "HTML"}
-    try:
-        requests.post(url, json=payload)
-    except Exception as e:
-        logging.error(f"Telegram error: {e}")
+    for chat_id in CHAT_IDS:
+        try:
+            requests.post(url, json={"chat_id": chat_id, "text": msg, "parse_mode": "HTML"})
+            logging.info(f"✅ Sent message to {chat_id}")
+        except Exception as e:
+            logging.error(f"❌ Telegram error for {chat_id}: {e}")
 
 def shorten_url(url):
     """Rút gọn link"""
@@ -71,7 +72,7 @@ def fetch_feed(url):
         return []
 
 def summarize_entry(entry):
-    """Tạo nội dung ngắn gọn & gọn gàng"""
+    """Tạo nội dung ngắn gọn"""
     title = entry.get("title", "Không có tiêu đề")
     link = shorten_url(entry.get("link", ""))
     source = entry.get("source", {}).get("title", "") or entry.get("publisher", "") or ""
@@ -121,7 +122,7 @@ def job_daily():
     check_news()
 
 def main():
-    logging.info("Miza AI News Bot started (no spam mode).")
+    logging.info("Miza AI News Bot started (multi-chat mode).")
 
     # Lịch kiểm tra định kỳ
     schedule.every().day.at("09:00").do(job_daily)
