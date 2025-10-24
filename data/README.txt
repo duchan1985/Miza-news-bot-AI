@@ -1,0 +1,1 @@
+Thư mục này chứa báo cáo PDF, file dữ liệu và nhật ký tin tức đã gửi.

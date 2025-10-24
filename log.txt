@@ -1,0 +1,11 @@
+2025-10-24 09:59:24,979 - INFO - Checked news: 0 new posts
+2025-10-24 10:00:25,646 - INFO - New post: Miza chào bán g\u1ea7n 10,6 tri\u1ec7u c\u1ed5 phi\u1ebfu cho c\u1ed5 \u0111ông - VnExpress
+2025-10-24 10:00:26,310 - INFO - New post: Công ty C\u1ed5 ph\u1ea7n Miza (mã c\u1ed5 phi\u1ebfu MZG) thông báo tri\u1ec3n khai chào bán c\u1ed5 phi\u1ebfu ra công chúng (K\u1ef3 3) - Tin nhanh ch\u1ee9ng khoán
+2025-10-24 10:00:26,984 - INFO - New post: Miza (MZG): 'Cô gái nông thôn' \u1ea9n mình trên sàn ch\u1ee9ng khoán, tham v\u1ecdng doanh thu 500 tri\u1ec7u USD - Ch\u1ee9ng khoán DNSE
+2025-10-24 10:00:29,438 - INFO - New post: MIZA vào Top 10 ESG Vi\u1ec7t Nam xanh 2025 nh\u1edd chi\u1ebfn l\u01b0\u1ee3c phát tri\u1ec3n kinh t\u1ebf tu\u1ea7n hoàn - CafeF
+2025-10-24 10:00:31,142 - INFO - New post: Doanh nghi\u1ec7p tái ch\u1ebf gi\u1ea5y Miza (MZG) s\u1eafp chào bán g\u1ea7n 10,6 tri\u1ec7u c\u1ed5 phi\u1ebfu, nâng v\u1ed1n \u0111i\u1ec1u l\u1ec7 lên 1.165 t\u1ef7 \u0111\u1ed3ng - Báo Pháp lu\u1eadt Vi\u1ec7t Nam
+2025-10-24 10:00:31,841 - INFO - New post: Vay n\u1ee3 l\u1edbn, \u0111\u1ea7u t\u01b0 m\u1ea1nh, Miza mu\u1ed1n c\u1ea3i thi\u1ec7n biên l\u1ee3i nhu\u1eadn - TheLEADER
+2025-10-24 10:00:32,532 - INFO - New post: Miza chào bán 10.6 tri\u1ec7u cp giá 10,000 \u0111\u1ed3ng/cp \u0111\u1ec3 gi\u1ea3m n\u1ee3 vay - Vietstock
+2025-10-24 10:00:33,197 - INFO - New post: Miza (MZG) d\u1ef1 ki\u1ebfn chào bán g\u1ea7n 10,6 tri\u1ec7u c\u1ed5 phi\u1ebfu cho c\u1ed5 \u0111ông hi\u1ec7n h\u1eefu v\u1edbi giá 10.000 \u0111\u1ed3ng/cp - thuonghieucongluan.com.vn
+2025-10-24 10:00:33,889 - INFO - New post: SciSparc mua c\u1ed5 ph\u1ea7n ki\u1ec3m soát Miza v\u1edbi giá 11,6 tri\u1ec7u USD - Investing.com Vi\u1ec7t Nam
+2025-10-24 10:00:33,889 - INFO - Checked news: 9 new posts
