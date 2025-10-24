@@ -1,5 +1,6 @@
 feedparser
 requests
-beautifulsoup4
-schedule
 python-dotenv
+schedule
+beautifulsoup4
+retrying
