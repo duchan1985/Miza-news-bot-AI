@@ -22,10 +22,14 @@ SENT_FILE = os.path.join(DATA_DIR, "sent_links.txt")
 LOG_FILE = "miza_news.log"
 
 os.makedirs(DATA_DIR, exist_ok=True)
-logging.basicConfig(filename=LOG_FILE, level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 # ======================
-# CORE FUNCTIONS
+# TELEGRAM FUNCTIONS
 # ======================
 
 def send_telegram(msg):
@@ -83,9 +87,7 @@ def check_news():
     new_posts = []
 
     feeds = [
-        # Google News
         f"https://news.google.com/rss/search?q=Miza&hl=vi&gl=VN&ceid=VN:vi",
-        # RSSHub fallback
         f"https://rsshub.app/youtube/search/Miza",
         f"https://rsshub.app/tiktok/search/Miza",
         f"https://rsshub.app/facebook/page/mizagroup.vn",
@@ -114,15 +116,14 @@ def check_news():
 # ======================
 
 def job_daily():
-    now = datetime.now().strftime("%H:%M")
-    if now == "09:00":
-        send_telegram("🤖 Xin chào! Miza AI ChatBot sẵn sàng cập nhật tin tức hôm nay 🌅")
+    """Gửi chào buổi sáng và cập nhật tin tức"""
+    send_telegram("🌅 Xin chào! Miza AI ChatBot sẵn sàng cập nhật tin tức hôm nay.")
     check_news()
 
 def main():
-    logging.info("Miza AI News Bot started successfully (quiet mode).")
+    logging.info("Miza AI News Bot started (no spam mode).")
 
-    # Lịch gửi tin và kiểm tra định kỳ
+    # Lịch kiểm tra định kỳ
     schedule.every().day.at("09:00").do(job_daily)
     schedule.every(10).minutes.do(check_news)
 
