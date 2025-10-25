@@ -1,139 +1,75 @@
-import os
-import time
-import logging
-import requests
-import feedparser
-import schedule
-from datetime import datetime
+import os, time, logging, requests, feedparser, schedule
+from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
 
-# ======================
-# CONFIG & SETUP
-# ======================
+# ========= CONFIG =========
 load_dotenv()
-
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-# Cho phép nhiều chat ID (ngăn cách bằng dấu phẩy trong .env)
-CHAT_IDS = [id.strip() for id in os.getenv("TELEGRAM_CHAT_IDS", "").split(",") if id.strip()]
-TIMEZONE = os.getenv("TIMEZONE", "Asia/Ho_Chi_Minh")
-
-DATA_DIR = "data"
-SENT_FILE = os.path.join(DATA_DIR, "sent_links.txt")
-LOG_FILE = "miza_news.log"
-
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+CHAT_IDS = [i.strip() for i in os.getenv("TELEGRAM_CHAT_IDS","").split(",") if i.strip()]
+DATA_DIR, SENT_FILE = "data", "data/sent_links.txt"
 os.makedirs(DATA_DIR, exist_ok=True)
-logging.basicConfig(
-    filename=LOG_FILE,
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(filename="miza_news.log", level=logging.INFO)
 
-# ======================
-# TELEGRAM FUNCTIONS
-# ======================
-
-def send_telegram(msg):
-    """Gửi tin nhắn đến nhiều người / nhóm"""
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    for chat_id in CHAT_IDS:
+# ========= TELEGRAM =========
+def send(msg):
+    for cid in CHAT_IDS:
         try:
-            requests.post(url, json={"chat_id": chat_id, "text": msg, "parse_mode": "HTML"})
-            logging.info(f"✅ Sent message to {chat_id}")
-        except Exception as e:
-            logging.error(f"❌ Telegram error for {chat_id}: {e}")
+            requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+                          json={"chat_id": cid, "text": msg, "parse_mode":"HTML"})
+        except Exception as e: logging.error(e)
 
-def shorten_url(url):
-    """Rút gọn link"""
+def shorten(u):
     try:
-        res = requests.get(f"https://tinyurl.com/api-create.php?url={url}", timeout=10)
-        return res.text if res.status_code == 200 else url
-    except:
-        return url
+        r=requests.get(f"https://tinyurl.com/api-create.php?url={u}",timeout=10)
+        return r.text if r.status_code==200 else u
+    except: return u
 
-def load_sent():
-    """Đọc danh sách link đã gửi"""
-    if os.path.exists(SENT_FILE):
-        with open(SENT_FILE, "r", encoding="utf-8") as f:
-            return set(f.read().splitlines())
-    return set()
+def sent_links():
+    return set(open(SENT_FILE,encoding="utf-8").read().splitlines()) if os.path.exists(SENT_FILE) else set()
 
-def save_sent(link):
-    """Lưu link đã gửi để tránh gửi lại"""
-    with open(SENT_FILE, "a", encoding="utf-8") as f:
-        f.write(link + "\n")
+def mark_sent(l):
+    open(SENT_FILE,"a",encoding="utf-8").write(l+"\n")
 
-def fetch_feed(url):
-    """Lấy tin RSS"""
-    try:
-        feed = feedparser.parse(url)
-        return feed.entries
-    except Exception as e:
-        logging.error(f"Error fetching {url}: {e}")
-        return []
+# ========= FEED LOGIC =========
+def get_date(e):
+    for k in ("published_parsed","updated_parsed"):
+        if hasattr(e,k) and getattr(e,k):
+            return datetime(*getattr(e,k)[:6])
+    return datetime.now()
 
-def summarize_entry(entry):
-    """Tạo nội dung ngắn gọn"""
-    title = entry.get("title", "Không có tiêu đề")
-    link = shorten_url(entry.get("link", ""))
-    source = entry.get("source", {}).get("title", "") or entry.get("publisher", "") or ""
-    return f"📰 <b>{title}</b> {('- ' + source) if source else ''}\n🔗 {link}"
+def is_recent(e):
+    d=get_date(e)
+    return d.date()==date.today() or (datetime.now()-d)<timedelta(days=1)
 
-# ======================
-# NEWS CHECKER
-# ======================
+def summarize(e):
+    title=e.get("title","Không có tiêu đề")
+    link=shorten(e.get("link",""))
+    src=(e.get("source",{}).get("title") or e.get("publisher") or e.get("author")
+         or getattr(e,"source","Tin tổng hợp"))
+    return f"📰 <b>{title}</b> ({src})\n🔗 {link}"
 
 def check_news():
-    logging.info("Fetching latest Miza news ...")
-    sent = load_sent()
-    new_posts = []
+    feeds=[("Google","https://news.google.com/rss/search?q=Miza&hl=vi&gl=VN&ceid=VN:vi"),
+           ("YouTube","https://rsshub.app/youtube/search/Miza"),
+           ("TikTok","https://rsshub.app/tiktok/search/Miza"),
+           ("Facebook","https://rsshub.app/facebook/page/mizagroup.vn"),
+           ("Instagram","https://rsshub.app/instagram/tag/miza")]
+    done,new=sent_links(),[]
+    for name,url in feeds:
+        for e in feedparser.parse(url).entries:
+            l=e.get("link","")
+            if l and l not in done and is_recent(e):
+                e.source=name; new.append(e); mark_sent(l)
+    new.sort(key=get_date,reverse=True)
+    if new:
+        msg="📢 <b>Tin Miza mới nhất (%s)</b>\n\n"%(datetime.now().strftime("%H:%M %d/%m/%Y"))
+        msg+="\n\n".join(f"{i+1}. {summarize(e)}" for i,e in enumerate(new[:15]))
+        send(msg)
 
-    feeds = [
-        f"https://news.google.com/rss/search?q=Miza&hl=vi&gl=VN&ceid=VN:vi",
-        f"https://rsshub.app/youtube/search/Miza",
-        f"https://rsshub.app/tiktok/search/Miza",
-        f"https://rsshub.app/facebook/page/mizagroup.vn",
-        f"https://rsshub.app/instagram/tag/miza"
-    ]
-
-    for url in feeds:
-        entries = fetch_feed(url)
-        for e in entries:
-            link = e.get("link", "")
-            if link and link not in sent:
-                msg = summarize_entry(e)
-                new_posts.append(msg)
-                save_sent(link)
-
-    if new_posts:
-        msg_header = f"📢 <b>Cập nhật mới về Miza ({datetime.now().strftime('%H:%M %d/%m')})</b>\n\n"
-        formatted = "\n\n".join(f"{i+1}. {p}" for i, p in enumerate(new_posts[:10]))
-        send_telegram(msg_header + formatted)
-        logging.info(f"Sent {len(new_posts)} new posts.")
-    else:
-        logging.info("No new posts found.")
-
-# ======================
-# SCHEDULE JOBS
-# ======================
-
-def job_daily():
-    """Gửi chào buổi sáng và cập nhật tin tức"""
-    send_telegram("🌅 Xin chào! Miza AI ChatBot sẵn sàng cập nhật tin tức hôm nay.")
-    check_news()
-
+# ========= SCHEDULE =========
+def job(): send("🌅 Xin chào! Miza AI ChatBot cập nhật tin tức hôm nay."); check_news()
 def main():
-    logging.info("Miza AI News Bot started (multi-chat mode).")
-
-    # Lịch kiểm tra định kỳ
-    schedule.every().day.at("09:00").do(job_daily)
+    schedule.every().day.at("09:00").do(job)
     schedule.every(10).minutes.do(check_news)
-
-    while True:
-        schedule.run_pending()
-        time.sleep(60)
-
-# ======================
-# RUN
-# ======================
-if __name__ == "__main__":
-    main()
+    while True: schedule.run_pending(); time.sleep(60)
+if __name__=="__main__": main()
