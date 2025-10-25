@@ -4,3 +4,4 @@ python-dotenv
 schedule
 beautifulsoup4
 retrying
+pytz
