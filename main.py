@@ -1,4 +1,4 @@
-import os, time, logging, requests, feedparser, schedule
+import os, time, logging, requests, feedparser, schedule, pytz
 from datetime import datetime, date, timedelta
 from dotenv import load_dotenv
 
@@ -7,8 +7,9 @@ load_dotenv()
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_IDS = [i.strip() for i in os.getenv("TELEGRAM_CHAT_IDS","").split(",") if i.strip()]
 DATA_DIR, SENT_FILE = "data", "data/sent_links.txt"
+VN_TZ = pytz.timezone("Asia/Ho_Chi_Minh")
 os.makedirs(DATA_DIR, exist_ok=True)
-logging.basicConfig(filename="miza_news.log", level=logging.INFO)
+logging.basicConfig(filename="miza_news.log", level=logging.INFO, format="%(asctime)s - %(message)s")
 
 # ========= TELEGRAM =========
 def send(msg):
@@ -16,6 +17,7 @@ def send(msg):
         try:
             requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage",
                           json={"chat_id": cid, "text": msg, "parse_mode":"HTML"})
+            logging.info(f"✅ Sent to {cid}")
         except Exception as e: logging.error(e)
 
 def shorten(u):
@@ -34,12 +36,12 @@ def mark_sent(l):
 def get_date(e):
     for k in ("published_parsed","updated_parsed"):
         if hasattr(e,k) and getattr(e,k):
-            return datetime(*getattr(e,k)[:6])
-    return datetime.now()
+            return datetime(*getattr(e,k)[:6]).astimezone(VN_TZ)
+    return datetime.now(VN_TZ)
 
 def is_recent(e):
-    d=get_date(e)
-    return d.date()==date.today() or (datetime.now()-d)<timedelta(days=1)
+    d=get_date(e); now=datetime.now(VN_TZ)
+    return d.date()==now.date() or (now-d)<timedelta(days=1)
 
 def summarize(e):
     title=e.get("title","Không có tiêu đề")
@@ -62,14 +64,24 @@ def check_news():
                 e.source=name; new.append(e); mark_sent(l)
     new.sort(key=get_date,reverse=True)
     if new:
-        msg="📢 <b>Tin Miza mới nhất (%s)</b>\n\n"%(datetime.now().strftime("%H:%M %d/%m/%Y"))
+        msg="📢 <b>Tin Miza mới nhất (%s)</b>\n\n"%(datetime.now(VN_TZ).strftime("%H:%M %d/%m/%Y"))
         msg+="\n\n".join(f"{i+1}. {summarize(e)}" for i,e in enumerate(new[:15]))
         send(msg)
+        logging.info(f"Sent {len(new)} posts.")
+    else:
+        logging.info("No new posts in 24h.")
 
 # ========= SCHEDULE =========
-def job(): send("🌅 Xin chào! Miza AI ChatBot cập nhật tin tức hôm nay."); check_news()
+def job():
+    send("🌅 Xin chào! Miza AI ChatBot cập nhật tin tức hôm nay 🌞")
+    check_news()
+
 def main():
+    logging.info("🚀 Miza AI ChatBot started (VN timezone mode).")
     schedule.every().day.at("09:00").do(job)
     schedule.every(10).minutes.do(check_news)
-    while True: schedule.run_pending(); time.sleep(60)
-if __name__=="__main__": main()
+    while True:
+        schedule.run_pending(); time.sleep(60)
+
+if __name__=="__main__":
+    main()
